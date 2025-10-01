@@ -1,0 +1,1 @@
+# fireball-game-cloud-function-sample
