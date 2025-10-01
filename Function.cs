@@ -44,17 +44,8 @@ namespace SampleProject
             {
                 string messageJson = data.Message?.TextData;
                 ParseResult result = await _fireball.ParseMessage(messageJson);
-                _logger.Log($"Message: {result.MessageName}");
-
                 MessageResult messageResult = await _game.HandleMessage(result);
-                if (messageResult != null && messageResult.IsSuccess())
-                {
-                    _logger.Log($"Result: success - {messageResult?.Message}");
-                }
-                else
-                {
-                    _logger.LogError($"Result: error - {messageResult?.Message}");
-                }
+                _logger.Log($"Result: {messageResult?.Message}");
             }
             catch (Exception ex)
             {

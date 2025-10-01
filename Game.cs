@@ -56,8 +56,16 @@ namespace SampleProject
         {
             if (message.GameSession == null)
             {
-                // create a new game session
+                // create a new default custom game state
+                var defaultGameState = new SampleGameState();
+
+                // create a new permanent game session
+                var gameSession = await _fireball.CreatePermanentGameSession(defaultGameState, message);
+
+                // update session message with new game session data
+                message.UpdateGameSession(gameSession);
             }
+            
             return await _fireball.SendSessionToClient(message);
         }
         
