@@ -42,6 +42,8 @@ namespace SampleProject
         {
             try
             {
+                FireballLogger.LogLevel = LogLevel.Debug;
+                
                 string messageJson = data.Message?.TextData;
                 ParseResult result = await _fireball.ParseMessage(messageJson);
                 MessageResult messageResult = await _game.HandleMessage(result);

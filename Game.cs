@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Fireball.Game.Server;
 using Fireball.Game.Server.Models;
 using Microsoft.Extensions.Logging;
@@ -54,6 +56,23 @@ namespace SampleProject
         
         private async Task<MessageResult> OnAuthSuccess(SessionMessage message)
         {
+            if (message.GameSession != null)
+            {
+                var gameSessionsList = await _fireball.GetAllGameSessions(message);
+
+                foreach (var gameSession in gameSessionsList)
+                {
+                    // get game state from the game session
+                    var gameState = gameSession.ParseGameState<SampleGameState>();
+
+                    // close game session with game-over game state
+                    if (gameState.IsGameOver)
+                    {
+                        bool closed = await _fireball.CloseGameSession(gameSession.Id);
+                    }
+                }
+            }
+            
             if (message.GameSession == null)
             {
                 // create a new default custom game state
@@ -72,6 +91,29 @@ namespace SampleProject
         private async Task<MessageResult> OnAuthReject(ErrorMessage error)
         {
             return await _fireball.SendErrorToClient(error, ErrorCode.Authentication);
+        }
+
+        private async Task TestGameState(BaseMessage message)
+        {
+            var gameState = await _fireball.GetGameState<SampleGameState>(message.GameSession);
+            
+            // update game state fields
+            gameState.CurrentScore = 123;
+            gameState.GameBoard.Add("row_1", 5);
+
+            // save updated game state into game session
+            await _fireball.SaveGameState<SampleGameState>(message.GameSession, gameState);
+            
+            // update number field directly
+            await _fireball.UpdateGameState(message.GameSession, "$.CurrentScore", 456);
+
+            // update the dictionary object
+            var gameBoard = new Dictionary<string, int>()
+            {
+                { "row_1", 1 },
+                { "row_2", 2 },
+            };
+            await _fireball.UpdateGameState(message.GameSession, "$.GameBoard", gameBoard);
         }
     }
 }
