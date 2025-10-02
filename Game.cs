@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Fireball.Game.Server;
 using Fireball.Game.Server.Models;
+using Fireball.Game.Server.Rng;
 using Microsoft.Extensions.Logging;
 
 namespace SampleProject
@@ -16,11 +18,13 @@ namespace SampleProject
     {
         private readonly IFireballLogger _logger;
         private readonly IFireball _fireball;
+        private readonly IRng _fireballRng;
 
-        public Game(ILogger<Game> logger, IFireball fireball)
+        public Game(ILogger<Game> logger, IFireball fireball, IRng fireballRng)
         {
             _logger = new FireballLogger(nameof(Game), logger);
             _fireball = fireball;
+            _fireballRng = fireballRng;
         }
 
         public async Task<MessageResult> HandleMessage(ParseResult result)
@@ -37,6 +41,9 @@ namespace SampleProject
                     
                     case FireballConstants.MessagesNames.AUTHENTICATE_REJECT:
                         return await OnAuthReject(result.ToMessage<ErrorMessage>());
+                    
+                    case GameMessages.SPIN_REQUEST:
+                        return await MakeSpin(result.ToMessage<SampleSpinRequest>());
 
                     default:
                         return MessageResult.ErrorResult($"Undefined message name: {result.MessageName}");
@@ -92,7 +99,24 @@ namespace SampleProject
         {
             return await _fireball.SendErrorToClient(error, ErrorCode.Authentication);
         }
+        
+        private async Task<MessageResult> MakeSpin(SampleSpinRequest message)
+        {
+            // example of custom calculation
+            long winAmount = 0;
+            var random = await _fireballRng.NextDouble(0, 1);
+            if (random > 0.5f)
+            {
+                winAmount = message.BetAmount * 2;
+            }
+            
+            // create a response message
+            var response = new SampleSpinResult(message.GameType, winAmount, message);
 
+            // send the response message to the game client
+            return await _fireball.SendMessageToClient(response);
+        }
+        
         private async Task TestGameState(BaseMessage message)
         {
             var gameState = await _fireball.GetGameState<SampleGameState>(message.GameSession);
